@@ -4,7 +4,25 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from Strict_LQR import strict_LQR
 def Monte_carlo(num_of_sim, num_of_ts, lqr, x0, Terminal_time):
-    
+    """
+    Estimates the value function at initial state x0 for a given LQR system
+    using Monte Carlo simulation.
+
+    The system is evolved forward in time using the optimal control at each
+    time step. The running and terminal costs are accumulated and averaged
+    across simulations.
+
+    Args:
+        num_of_sim (int): Number of Monte Carlo simulations to average over.
+        num_of_ts (int): Number of time steps in each simulation.
+        lqr (strict_LQR): Instance of the strict LQR solver providing dynamics and optimal control.
+        x0 (np.ndarray): Initial state vector (shape: [state_dim]).
+        Terminal_time (float): Final time horizon T.
+
+    Returns:
+        float: The estimated expected cost (value function) from state x0.
+
+    """
     dt = Terminal_time / num_of_ts
     cost_integrand = 0
     cost = 0
@@ -22,9 +40,36 @@ def Monte_carlo(num_of_sim, num_of_ts, lqr, x0, Terminal_time):
     return cost/num_of_sim
 
 def Plot_Error_graph(H, M, sigma, C, D, R, T, time_grid, x0):
+    """
+    Plots error convergence of the Monte Carlo estimate of the value function
+    with respect to:
+      1. Number of Monte Carlo samples (fixed time discretization).
+      2. Number of time steps (fixed number of simulations).
+
+    The error is computed as the absolute difference between the analytical
+    value function (from `strict_LQR.value_function()`) and the Monte Carlo estimate.
+
+    Args:
+        H (np.ndarray): Drift matrix for state dynamics.
+        M (np.ndarray): Control matrix.
+        sigma (np.ndarray): Diffusion matrix (noise coefficient).
+        C (np.ndarray): State running cost matrix.
+        D (np.ndarray): Control running cost matrix.
+        R (np.ndarray): Terminal cost matrix.
+        T (float): Time horizon.
+        time_grid (np.ndarray): Array of time points for ODE solver in strict_LQR.
+        x0 (np.ndarray): Initial state vector for simulation and comparison.
+
+    Returns:
+        None: Saves two plots as image files:
+            - 'Ex1_{x0}.jpeg': Error vs. number of samples (log-log scale)
+            - 'Ex2_{x0}.jpeg': Error vs. number of time steps (log-log scale)
+
+    """
+
     lqr = strict_LQR(H, M, sigma, C, D, R, T, time_grid)
-    num_of_sim = 10000
-    num_of_ts = 10000
+    num_of_sim = 100
+    num_of_ts = 100
 
     arr_num_of_sim = [2**i for i in range(1, 10)]
     arr_num_of_ts = [2**i for i in range(4, 10)]
@@ -48,7 +93,7 @@ def Plot_Error_graph(H, M, sigma, C, D, R, T, time_grid, x0):
     plt.ylabel('Error')
     plt.title('Error Convergence vs. Sample Size')
     plt.grid(True)
-    plt.savefig(f"Temp1_{x0}.jpeg")
+    plt.savefig(f"Ex1_{x0}.jpeg")
     
     errors=[]
     for temp_num_of_ts in arr_num_of_ts:
@@ -66,9 +111,27 @@ def Plot_Error_graph(H, M, sigma, C, D, R, T, time_grid, x0):
     plt.ylabel('Error')
     plt.title('Error Convergence vs. Time Steps')
     plt.grid(True)
-    plt.savefig(f"Temp2_{x0}.jpeg")
+    plt.savefig(f"Ex2_{x0}.jpeg")
 
 def Exercise_1():
+    """
+    Runs the full error benchmarking exercise for two different initial states.
+
+    The function:
+        - Sets up a sample 2D Linear-Quadratic Regulator (LQR) problem.
+        - Computes the true value function using the strict solution (Riccati-based).
+        - Estimates the value function using Monte Carlo simulations.
+        - Plots the absolute error in log-log scale with respect to:
+            - Number of Monte Carlo samples.
+            - Number of time steps in simulation.
+
+    Initial states tested:
+        - x₀ = [1.0, 1.0]
+        - x₀ = [2.0, 2.0]
+
+    Returns:
+        None: Two sets of log-log error plots are saved per initial state.
+    """
     H = np.array([[1.0, 1.0], [0.0, 1.0]]) * 0.5
     M = np.array([[1.0, 1.0], [0.0, 1.0]])
     sigma = np.eye(2) * 0.5

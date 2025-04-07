@@ -4,6 +4,23 @@ from Strict_LQR import strict_LQR
 from Soft_LQR import soft_LQR
 
 def simulate_trajectory(num_of_ts,x0,soft_Lqr,strict_Lqr,Terminal_time):
+    """
+    Simulates a single trajectory of the state under both strict and soft LQR controllers
+    starting from the same initial state and under the same noise realization.
+
+    Args:
+        num_of_ts (int): Number of time steps for simulation.
+        x0 (np.ndarray): Initial state vector (shape: [state_dim]).
+        soft_Lqr (soft_LQR): Soft LQR controller instance.
+        strict_Lqr (strict_LQR): Strict LQR controller instance.
+        Terminal_time (float): Final time T for simulation horizon.
+
+    Returns:
+        tuple:
+            - np.ndarray: Trajectory of state under strict LQR (shape: [num_of_ts, state_dim]).
+            - np.ndarray: Trajectory of state under soft LQR (shape: [num_of_ts, state_dim]).
+
+    """
     X_soft = [x0]
     X_strict = [x0]
     dt = Terminal_time / num_of_ts
@@ -20,6 +37,26 @@ def simulate_trajectory(num_of_ts,x0,soft_Lqr,strict_Lqr,Terminal_time):
     return np.array(X_strict),np.array(X_soft)
 
 def plot_trajectories(num_of_ts,soft_Lqr,strict_Lqr,Terminal_time):
+    """
+    Plots and compares the state trajectories of strict and soft LQR policies
+    for four different initial conditions.
+
+    For each initial condition, two plots are generated:
+        1. Time evolution of both state variables.
+        2. 2D phase trajectory (state-1 vs. state-2).
+
+    Args:
+        num_of_ts (int): Number of time steps for simulation.
+        soft_Lqr (soft_LQR): Soft LQR controller instance.
+        strict_Lqr (strict_LQR): Strict LQR controller instance.
+        Terminal_time (float): Final time T for the simulations.
+
+    Returns:
+        None: Saves and shows the plots.
+            - 'Ex2_1.png': Time vs. state plots (2x2 subplot grid).
+            - 'Ex2_2.png': Phase plots of state-1 vs. state-2 (2x2 subplot grid).
+
+    """
     time_grid = np.linspace(0, Terminal_time, num_of_ts)
     initial_conditions = [
             [2, 2],
@@ -66,12 +103,33 @@ def plot_trajectories(num_of_ts,soft_Lqr,strict_Lqr,Terminal_time):
         axs2[i].set_xlabel('State-x')
         axs2[i].set_ylabel('State-y')
         axs2[i].legend()
-        
+
+    fig.savefig("Ex2_1.png",dpi=300)    
+    fig2.savefig("Ex2_2.png",dpi=300)    
     plt.tight_layout()
     plt.show()
 
 
 def Exercise_2():
+    """
+    Executes the simulation and visualization of trajectories under strict and soft LQR control.
+
+    Steps:
+        1. Defines a 2D linear system with quadratic costs and additive Gaussian noise.
+        2. Constructs both strict and soft LQR controllers.
+        3. Simulates state trajectories for multiple initial conditions.
+        4. Generates two sets of comparative plots:
+            - Time vs. state trajectories.
+            - Phase-space trajectories (x vs y).
+
+    System parameters:
+        - State/control dynamics: defined by matrices H, M.
+        - Costs: state (C), control (D), terminal (R).
+        - Noise: isotropic with covariance sigma @ sigmaᵀ.
+        - Time horizon: T = 0.5 seconds.
+        - Soft LQR parameters: entropy coefficient tau, discount gamma.
+
+    """
     H = np.array([[1.0, 1.0], [0.0, 1.0]]) * 0.5
     M = np.array([[1.0, 1.0], [0.0, 1.0]])
     sigma = np.eye(2) * 0.5

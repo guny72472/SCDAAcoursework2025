@@ -5,7 +5,35 @@ from Environment import *
 from Soft_LQR import soft_LQR
 
 def offline_actor_algorithm(env, fixed_value, num_episodes=501, Δt=0.01, τ=0.5, γcritic=1):
-    # Initialize parameter η
+    """
+    Offline Actor Training using the Policy Gradient Method with a Fixed Critic.
+
+    Args:
+        env (LQREnvironmentWithPolicy): Environment to simulate trajectories.
+        fixed_value (Callable): Oracle (exact) value function V*(t, x), used to compute TD residuals.
+        num_episodes (int): Number of Monte Carlo episodes for training.
+        Δt (float): Time discretization step.
+        τ (float): Entropy regularization coefficient (adds exploration).
+        γcritic (float): (Unused) Placeholder for future discount factor.
+
+    Returns:
+        PolicyNeuralNetwork: Trained stochastic policy network π_θ(t, x) ~ N(μ(t, x), Σ(t)).
+
+    Policy Representation:
+        - π_θ(t, x) is parameterized as a time-dependent multivariate Gaussian:
+            * Mean: μ(t, x) = A(t) x
+            * Covariance: Σ(t) from learned parameters (via var output)
+
+    Training Procedure:
+        - For each episode:
+            * Simulate trajectory under current stochastic policy.
+            * At each step n, compute TD-like signal:
+                advantage = (V(t_{n+1}, x_{n+1}) - V(t_n, x_n)) + (f_t + τ·logπ(α_n|x_n)) Δt
+            * Policy gradient loss: -logπ(α_n|x_n) · advantage
+        - Optimizes the expected cost-to-go with entropy regularization.
+
+
+    """
     policy_nn = PolicyNeuralNetwork(hidden_size=16, d=env.action_dim)
     optimizer = optim.Adam(policy_nn.parameters(), lr=1e-3)
    
@@ -49,7 +77,6 @@ def offline_actor_algorithm(env, fixed_value, num_episodes=501, Δt=0.01, τ=0.5
         loss = 0.0
         for n in range(env.N - 1):
             t, Xn = states[n]
-            t_next, Xn_next = states[n + 1]
             delta_v = abs(values[n + 1] - values[n])
             running_cost = (costs[n] + τ * log_probs[n]) * (Δt)
             log_prob = log_probs[n]
@@ -68,6 +95,28 @@ def offline_actor_algorithm(env, fixed_value, num_episodes=501, Δt=0.01, τ=0.5
     return policy_nn
 
 def Exercise_4():
+    """
+    Executes the offline actor training pipeline for the entropy-regularized soft LQR problem.
+
+    Steps:
+        1. Defines the 2D linear system dynamics and quadratic cost structure.
+        2. Initializes the environment with control-affine dynamics and entropy term.
+        3. Creates a soft LQR solver to supply the exact value function V*(t, x).
+        4. Trains a stochastic policy using the policy gradient method with the fixed V*.
+        5. Returns a policy network capable of sampling optimal-like controls under learned distribution.
+
+    System Parameters:
+        - Linear Dynamics: dx = (H·x + M·u) dt + σ dW
+        - Cost:
+            * Running cost: xᵀC·x + uᵀD·u + τ·entropy
+            * Terminal cost: xᵀ R·x
+        - Time Horizon: T = 0.5, Δt = 0.005
+        - Noise Covariance: σ = 0.5·I
+        - Entropy Regularization: τ = 0.5
+
+    Returns:
+        None: Trains and prints actor training losses.
+    """
     H = torch.tensor([[1.0, 1.0], [0.0, 1.0]], dtype=torch.float32) * 0.5
     M = torch.tensor([[1.0, 0.0], [0.0, 1.0]], dtype=torch.float32)
     C = torch.tensor([[1.0, 0.1], [0.1, 1.0]], dtype=torch.float32)
