@@ -68,8 +68,8 @@ def Plot_Error_graph(H, M, sigma, C, D, R, T, time_grid, x0):
     """
 
     lqr = strict_LQR(H, M, sigma, C, D, R, T, time_grid)
-    num_of_sim = 100
-    num_of_ts = 100
+    num_of_sim = 10000
+    num_of_ts = 10000
 
     arr_num_of_sim = [2**i for i in range(1, 10)]
     arr_num_of_ts = [2**i for i in range(4, 10)]
